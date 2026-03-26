@@ -1,0 +1,36 @@
+Experiment: Design Thinking Project
+Project Title
+Autonomous Solar-Powered Rural Monitoring System
+
+Introduction / Project Overview
+Many rural areas and village roads do not have proper street lighting, security cameras, or internet connectivity. Because of this, people may face safety problems, especially during night time. Children, women, and elderly people feel unsafe while walking on village roads at night.
+
+To solve this problem, our team proposes an Autonomous Solar-Powered Rural Monitoring System. In this system, smart street lights are installed in rural areas. These street lights use solar energy, so they do not require an electricity connection.
+
+Each street light is equipped with the following components:
+
+Solar Panel – to generate power from sunlight
+
+GPS Module – to identify the location of the street light
+
+LoRa Communication Module – to transmit data over long distances without internet
+
+FPV Camera – to capture live video from the street
+
+The LoRa module sends the street light location and camera data to a central control room located in the village where internet access is available. This system works even in areas without internet connectivity because LoRa communication does not require continuous internet.
+
+At the control room, all street light data and video feeds are monitored. In the future, the system can automatically detect suspicious or irrelevant activities. When such activities are detected, a notification will be sent to responsible persons such as village security staff or police.
+
+This system improves safety, monitoring, and lighting in rural areas while using renewable solar energy.
+
+End Users
+The main end users of this system are:
+
+Village children
+
+Women
+
+Elderly people
+
+These groups need safer roads and better lighting at night. The system helps them travel safely in rural areas.
+
