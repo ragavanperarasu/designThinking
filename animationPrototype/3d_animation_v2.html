@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar Rural Monitoring System – 3D Big Rural Area</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; overflow:hidden; font-family:'Share Tech Mono', monospace; }
+  #canvas { display:block; width:100vw; height:100vh; }
+  .hud { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
+
+  .title-bar {
+    position:absolute; top:0; left:0; right:0; padding:13px 22px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.88) 0%, transparent 100%);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .title-main {
+    font-family:'Orbitron', monospace; font-size:clamp(9px,1.4vw,16px);
+    color:#ffd700; letter-spacing:3px; text-transform:uppercase;
+    animation: titlePulse 3s ease-in-out infinite alternate;
+  }
+  .title-sub { color:#00d4ff; font-size:9px; letter-spacing:2px; margin-top:3px; }
+  .status-bar { text-align:right; }
+  .status-item { color:#39ff14; font-size:10px; letter-spacing:1px; margin:2px 0; }
+  .status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:5px; animation:blink 1s step-end infinite; }
+
+  .panel-left { position:absolute; left:14px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px; }
+  .panel-right { position:absolute; right:14px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px; }
+  .data-card {
+    background:rgba(0,8,18,0.82); border:1px solid rgba(0,212,255,0.3);
+    border-radius:6px; padding:9px 13px; min-width:152px;
+    animation:cardFadeIn 1s ease both;
+  }
+  .dc-label { color:#00d4ff; font-size:9px; letter-spacing:2px; text-transform:uppercase; }
+  .dc-value { color:#ffd700; font-size:17px; font-family:'Orbitron',monospace; margin:2px 0; }
+  .dc-unit { color:#555; font-size:9px; }
+  .dc-bar { height:3px; background:#0a1e3a; border-radius:2px; margin-top:5px; overflow:hidden; }
+  .dc-fill { height:100%; background:linear-gradient(90deg,#00d4ff,#39ff14); animation:fillBar 3s ease-in-out infinite alternate; border-radius:2px; }
+
+  /* Zone badges */
+  .zone-badge {
+    position:absolute; top:78px; padding:8px 14px;
+    border-radius:8px;
+  }
+  .zone-village {
+    left:16px; background:rgba(192,160,255,0.12); border:1px solid #c0a0ff;
+    animation:cardFadeIn 1.2s ease both;
+  }
+  .zone-road {
+    right:16px; background:rgba(255,100,50,0.1); border:1px solid #ff6432;
+    animation:cardFadeIn 1.2s ease both; text-align:right;
+  }
+  .zb-title { font-size:9px; letter-spacing:2px; }
+  .zb-val { color:#fff; font-size:12px; margin-top:2px; font-family:'Orbitron',monospace; }
+  .zb-sub { color:#777; font-size:9px; margin-top:1px; }
+
+  /* Node deployment map */
+  .node-map {
+    position:absolute; bottom:55px; left:50%; transform:translateX(-50%);
+    background:rgba(0,8,18,0.88); border:1px solid rgba(0,212,255,0.4);
+    border-radius:10px; padding:11px 20px; min-width:420px; text-align:center;
+  }
+  .nm-title { color:#00d4ff; font-size:9px; letter-spacing:3px; margin-bottom:7px; }
+  .nm-row { position:relative; height:28px; display:flex; align-items:center; }
+  .nm-line { position:absolute; left:12px; right:12px; height:2px; background:linear-gradient(90deg,#c0a0ff,#0a3060 25%,#0a3060 80%,#ff5533); top:50%; transform:translateY(-50%); }
+  .nm-dot { position:absolute; transform:translateX(-50%); }
+  .nm-ctrl { left:0; width:18px; height:18px; background:#c0a0ff; border:2px solid #fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:7px; color:#000; font-weight:bold; }
+  .nm-light { width:11px; height:11px; background:#ffd700; border:1px solid #fff; border-radius:50%; animation:distPulse 2s ease-in-out infinite; }
+  .nm-end { right:0; transform:translateX(50%); width:13px; height:13px; background:#333; border:1px solid #666; border-radius:3px; }
+  .nm-sub { color:#777; font-size:8px; margin-top:5px; }
+  .nm-info { color:#39ff14; font-size:9px; margin-top:4px; letter-spacing:1px; }
+
+  .bottom-bar {
+    position:absolute; bottom:0; left:0; right:0; padding:9px 24px;
+    background:linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+    display:flex; justify-content:center; gap:22px; flex-wrap:wrap;
+  }
+  .ct { display:flex; align-items:center; gap:5px; color:#a0b8cc; font-size:9px; letter-spacing:1px; }
+  .td { width:8px; height:8px; border-radius:50%; }
+
+  .scanlines {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.02) 2px,rgba(0,0,0,0.02) 4px);
+    pointer-events:none; opacity:0.4;
+  }
+
+  @keyframes titlePulse { from{text-shadow:0 0 10px rgba(255,215,0,0.3)} to{text-shadow:0 0 30px rgba(255,215,0,0.8)} }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes cardFadeIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes fillBar { from{width:35%} to{width:96%} }
+  @keyframes distPulse { 0%,100%{box-shadow:0 0 4px #ffd700} 50%{box-shadow:0 0 14px #ffd700,0 0 22px rgba(255,215,0,0.4)} }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div class="hud">
+  <div class="scanlines"></div>
+
+  <div class="title-bar">
+    <div>
+      <div class="title-main">Autonomous Solar-Powered Rural Monitoring System</div>
+      <div class="title-sub">Wide Rural Area &nbsp;·&nbsp; 6 Street Lights Spread Far Along Roadside &nbsp;·&nbsp; LoRa Long-Range → Village Control Room</div>
+    </div>
+    <div class="status-bar">
+      <div class="status-item"><span class="status-dot" style="background:#39ff14"></span>ALL 6 NODES ACTIVE</div>
+      <div class="status-item"><span class="status-dot" style="background:#ffd700;animation-delay:0.5s"></span>SOLAR CHARGING</div>
+      <div class="status-item"><span class="status-dot" style="background:#00d4ff;animation-delay:1s"></span>LORA LONG-RANGE TX</div>
+    </div>
+  </div>
+
+  <!-- Village Zone Badge -->
+  <div class="zone-badge zone-village">
+    <div class="zb-title" style="color:#c0a0ff">🌐 INTERNET AVAILABLE</div>
+    <div class="zb-val">VILLAGE CONTROL ROOM</div>
+    <div class="zb-sub">All LoRa data received here · Alert to police</div>
+  </div>
+
+  <!-- Road Zone Badge -->
+  <div class="zone-badge zone-road">
+    <div class="zb-title" style="color:#ff6432">📡 NO INTERNET ZONE</div>
+    <div class="zb-val">RURAL ROAD LIGHTS</div>
+    <div class="zb-sub">Solar powered · LoRa only · Far from village</div>
+  </div>
+
+  <!-- Left Panel -->
+  <div class="panel-left">
+    <div class="data-card">
+      <div class="dc-label">LoRa Range</div>
+      <div class="dc-value">~15KM</div>
+      <div class="dc-unit">MAX TX DISTANCE</div>
+      <div class="dc-bar"><div class="dc-fill" style="width:90%"></div></div>
+    </div>
+    <div class="data-card" style="animation-delay:0.3s">
+      <div class="dc-label">Solar Output</div>
+      <div class="dc-value" id="solarVal">24.6</div>
+      <div class="dc-unit">WATTS PER NODE</div>
+      <div class="dc-bar"><div class="dc-fill" style="width:82%"></div></div>
+    </div>
+    <div class="data-card" style="animation-delay:0.6s">
+      <div class="dc-label">Nodes Online</div>
+      <div class="dc-value">6 / 6</div>
+      <div class="dc-unit">STREET LIGHT UNITS</div>
+      <div class="dc-bar"><div class="dc-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="panel-right">
+    <div class="data-card" style="animation-delay:0.4s">
+      <div class="dc-label">GPS Lock</div>
+      <div class="dc-value">11.01°N</div>
+      <div class="dc-unit">76.95°E — RURAL COIMBATORE</div>
+      <div class="dc-bar"><div class="dc-fill" style="width:100%"></div></div>
+    </div>
+    <div class="data-card" style="animation-delay:0.7s">
+      <div class="dc-label">Camera Feed</div>
+      <div class="dc-value">LIVE</div>
+      <div class="dc-unit">6 CAMS · 720p · 15fps</div>
+      <div class="dc-bar"><div class="dc-fill" style="width:75%"></div></div>
+    </div>
+    <div class="data-card" style="animation-delay:1s">
+      <div class="dc-label">Battery Avg</div>
+      <div class="dc-value" id="batVal">87</div>
+      <div class="dc-unit">% CHARGE</div>
+      <div class="dc-bar"><div class="dc-fill" style="width:87%"></div></div>
+    </div>
+  </div>
+
+  <!-- Node map -->
+  <div class="node-map">
+    <div class="nm-title">DEPLOYMENT MAP — RURAL ROAD CORRIDOR (OUT OF VILLAGE)</div>
+    <div class="nm-row">
+      <div class="nm-line"></div>
+      <div class="nm-dot nm-ctrl" style="left:0">C</div>
+      <div class="nm-dot" style="left:16%"><div class="nm-light"></div></div>
+      <div class="nm-dot" style="left:29%"><div class="nm-light" style="animation-delay:0.25s"></div></div>
+      <div class="nm-dot" style="left:43%"><div class="nm-light" style="animation-delay:0.5s"></div></div>
+      <div class="nm-dot" style="left:57%"><div class="nm-light" style="animation-delay:0.75s"></div></div>
+      <div class="nm-dot" style="left:71%"><div class="nm-light" style="animation-delay:1s"></div></div>
+      <div class="nm-dot" style="left:85%"><div class="nm-light" style="animation-delay:1.25s"></div></div>
+      <div class="nm-dot nm-end"></div>
+    </div>
+    <div class="nm-sub">C = Village (Internet) &nbsp;|&nbsp; ● = Solar Street Light (No Internet, roadside) &nbsp;|&nbsp; ■ = Far Road End</div>
+    <div class="nm-info">⚡ LoRa signal travels from each light → back to Control Room without internet</div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="ct"><div class="td" style="background:#ffd700"></div>Solar Panel</div>
+    <div class="ct"><div class="td" style="background:#00d4ff"></div>LoRa Long-Range</div>
+    <div class="ct"><div class="td" style="background:#ff6b35"></div>FPV Camera</div>
+    <div class="ct"><div class="td" style="background:#39ff14"></div>GPS Module</div>
+    <div class="ct"><div class="td" style="background:#c0a0ff"></div>Village + Internet</div>
+    <div class="ct"><div class="td" style="background:#4a8a4a"></div>Rural Fields</div>
+    <div class="ct"><div class="td" style="background:#aaaaaa"></div>Mountain Range</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+// WORLD LAYOUT (Z axis = road direction):
+//   Z = +65  →  Village + Control Room (Internet available)
+//   Z = 0    →  Start of rural road (exit from village)
+//   Z = -110 →  Far end of road (deepest no-internet zone)
+//   Street lights at: Z = -10, -27, -44, -61, -78, -95
+//   Lights on RIGHT side of road: X = +4.5
+// ============================================================
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 2000);
+camera.position.set(0, 25, 50);
+camera.lookAt(0, 3, -20);
+
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x010912);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.78;
+scene.fog = new THREE.FogExp2(0x010912, 0.007);
+
+// Helpers
+function mat(col, em=0, emI=0, rough=0.85, metal=0.1) {
+  return new THREE.MeshStandardMaterial({color:col,emissive:em,emissiveIntensity:emI,roughness:rough,metalness:metal});
+}
+function bx(w,h,d,m) { const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); o.castShadow=true; o.receiveShadow=true; return o; }
+function cy(rt,rb,h,s,m) { const o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,s),m); o.castShadow=true; return o; }
+
+// Scene lights
+scene.add(new THREE.AmbientLight(0x0a1830, 1.1));
+const moon = new THREE.DirectionalLight(0x3355aa, 0.45);
+moon.position.set(30, 80, 20);
+moon.castShadow = true;
+moon.shadow.mapSize.set(2048,2048);
+moon.shadow.camera.left = -100; moon.shadow.camera.right = 100;
+moon.shadow.camera.top = 100; moon.shadow.camera.bottom = -100;
+moon.shadow.camera.far = 300;
+scene.add(moon);
+
+// ---- STARS ----
+const sg = new THREE.BufferGeometry();
+const sp = [];
+for(let i=0;i<1200;i++) sp.push((Math.random()-.5)*800, Math.random()*100+20, (Math.random()-.5)*800);
+sg.setAttribute('position', new THREE.Float32BufferAttribute(sp,3));
+scene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff,size:0.18,transparent:true,opacity:0.85})));
+
+// ---- MOON SPHERE ----
+const moonSph = new THREE.Mesh(new THREE.SphereGeometry(6,16,16), mat(0xfffbe0,0xfff0a0,0.5));
+moonSph.position.set(-100,95,-180);
+scene.add(moonSph);
+const moonPt = new THREE.PointLight(0xaabbdd,0.4,500);
+moonPt.position.copy(moonSph.position);
+scene.add(moonPt);
+
+// ---- GROUND (wide rural) ----
+const gnd = new THREE.Mesh(new THREE.PlaneGeometry(400,400,60,60), mat(0x0c1c0c));
+gnd.rotation.x = -Math.PI/2; gnd.receiveShadow=true;
+scene.add(gnd);
+
+// Field patches
+for(let i=0;i<22;i++){
+  const fw=16+Math.random()*18, fd=12+Math.random()*14;
+  const fx=(Math.random()-.5)*120, fz=-Math.random()*130;
+  if(Math.abs(fx)<9) continue;
+  const fp = new THREE.Mesh(new THREE.PlaneGeometry(fw,fd), mat(Math.random()>.5?0x0a180a:0x111e11));
+  fp.rotation.x=-Math.PI/2; fp.position.set(fx,0.015,fz);
+  scene.add(fp);
+}
+
+// ---- ROAD (long, going deep) ----
+const roadMesh = new THREE.Mesh(new THREE.PlaneGeometry(7,230), mat(0x0e0e0e,0,0,0.95));
+roadMesh.rotation.x=-Math.PI/2; roadMesh.position.set(0,0.01,-45);
+roadMesh.receiveShadow=true;
+scene.add(roadMesh);
+
+// Road shoulders
+[-4.8,4.8].forEach(ox=>{
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(2.2,230), mat(0x181008,0,0,1));
+  sh.rotation.x=-Math.PI/2; sh.position.set(ox,0.008,-45);
+  scene.add(sh);
+});
+
+// Center dashes
+for(let z=62;z>-160;z-=7){
+  const d=bx(0.18,0.008,3.5,mat(0x1e1e00));
+  d.position.set(0,0.018,z);
+  scene.add(d);
+}
+
+// Edge lines
+[-3.2,3.2].forEach(ox=>{
+  const el=new THREE.Mesh(new THREE.PlaneGeometry(0.14,230),mat(0xffffff,0,0,1,0));
+  el.material.opacity=0.25; el.material.transparent=true;
+  el.rotation.x=-Math.PI/2; el.position.set(ox,0.02,-45);
+  scene.add(el);
+});
+
+// ---- MOUNTAINS ----
+for(let i=0;i<14;i++){
+  const mw=50+Math.random()*60, mh=22+Math.random()*28;
+  const mx=(Math.random()-.5)*350, mz=-170-Math.random()*50;
+  const shape=new THREE.Shape();
+  shape.moveTo(-mw/2,0);
+  const segs=18;
+  for(let s=0;s<=segs;s++){
+    const f=s/segs;
+    shape.lineTo((f-.5)*mw, Math.sin(f*Math.PI)*mh+Math.sin(f*Math.PI*4)*mh*0.07);
+  }
+  shape.lineTo(mw/2,0); shape.closePath();
+  const msh=new THREE.Mesh(new THREE.ShapeGeometry(shape), mat(0x080d16,0,0,1));
+  msh.position.set(mx,0,mz); msh.rotation.y=(Math.random()-.5)*.3;
+  scene.add(msh);
+}
+
+// ---- TREES (dense along both roadsides) ----
+function makeTree(x,z,sc=1){
+  const g=new THREE.Group();
+  const tr=cy(.11*sc,.17*sc,1.6*sc,6,mat(0x3a2010)); tr.position.y=.8*sc; g.add(tr);
+  const cs=[0x0d3c0d,0x124e12,0x0a300a];
+  for(let i=0;i<3;i++){
+    const cn=new THREE.Mesh(new THREE.ConeGeometry((1.0-i*.14)*sc,2.1*sc,7),mat(cs[i%3]));
+    cn.position.y=(2.0+i*1.15)*sc; g.add(cn);
+  }
+  g.position.set(x,0,z);
+  scene.add(g);
+}
+for(let z=58;z>-150;z-=9){
+  const j=(Math.random()-.5)*4, sc=0.65+Math.random()*.65;
+  makeTree(-(7.5+Math.random()*5),z+j,sc);
+  makeTree(7.5+Math.random()*5,z+j+(Math.random()-.5)*4,sc);
+}
+// Sparse interior trees
+for(let i=0;i<40;i++){
+  const tx=(Math.random()-.5)*100, tz=-Math.random()*130;
+  if(Math.abs(tx)<10) continue;
+  makeTree(tx,tz,0.45+Math.random()*.7);
+}
+
+// ---- STREET LIGHT FUNCTION ----
+const lampLights = [];
+const allRings = [];
+
+const LIGHT_X = 4.5;
+const lightZ = [-10, -27, -44, -61, -78, -95];
+
+function makeStreetLight(x, z) {
+  const g = new THREE.Group();
+
+  // Pole
+  const pole = cy(.1,.13,8,8,mat(0x505060,0,0,.5,.7));
+  pole.position.y = 4;
+  g.add(pole);
+
+  // Cross arm
+  const arm = bx(2.2,.14,.14,mat(0x505060,0,0,.5,.6));
+  arm.position.set(1.1, 8.2, 0);
+  g.add(arm);
+
+  // Lamp head
+  const head = bx(.65,.3,.5,mat(0x1e1e28));
+  head.position.set(2.2, 8.1, 0);
+  g.add(head);
+
+  // Lamp glow
+  const glowSph = new THREE.Mesh(new THREE.SphereGeometry(.2,8,8),
+    new THREE.MeshStandardMaterial({color:0xffee80,emissive:0xffd060,emissiveIntensity:5}));
+  glowSph.position.set(2.2, 7.8, 0);
+  g.add(glowSph);
+
+  // Point light
+  const pl = new THREE.PointLight(0xffd050, 4, 22);
+  pl.position.set(2.2, 7.5, 0);
+  g.add(pl);
+  lampLights.push(pl);
+
+  // ---- Solar Panel ----
+  const spG = new THREE.Group();
+  const spBody = bx(1.6,.08,1.0,mat(0x0a1e55,0x0a3caa,.5));
+  spG.add(spBody);
+  for(let i=-2;i<=2;i++){
+    const v=bx(.025,.09,1.0,mat(0x1a3a88)); v.position.x=i*.31; spG.add(v);
+  }
+  for(let j=-1;j<=1;j++){
+    const h=bx(1.6,.09,.025,mat(0x1a3a88)); h.position.z=j*.31; spG.add(h);
+  }
+  // Solar panel shimmer
+  const shimmer=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.0),
+    new THREE.MeshStandardMaterial({color:0x4488ff,emissive:0x2266cc,emissiveIntensity:.3,transparent:true,opacity:.4,side:THREE.FrontSide}));
+  shimmer.position.y=.06;
+  spG.add(shimmer);
+  spG.rotation.z=-.32;
+  spG.position.set(-.55, 8.6, 0);
+  g.add(spG);
+
+  // ---- FPV Camera ----
+  const camG = new THREE.Group();
+  const cbody = bx(.35,.24,.3,mat(0x111111));
+  camG.add(cbody);
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.14,12),
+    mat(0x050505,0x0099ff,1.5,0,.5));
+  lens.rotation.x=Math.PI/2; lens.position.z=.18;
+  camG.add(lens);
+  const rec = new THREE.Mesh(new THREE.SphereGeometry(.045,6,6),
+    new THREE.MeshStandardMaterial({color:0xff0000,emissive:0xff0000,emissiveIntensity:4}));
+  rec.position.set(.12,.09,.13);
+  camG.add(rec);
+  camG.position.set(2.2, 7.5, .4);
+  camG.rotation.y = -.5;
+  g.add(camG);
+
+  // ---- GPS Antenna ----
+  const gpsAnt = cy(.05,.05,.4,6,mat(0x888888,0x00ff44,.9));
+  gpsAnt.position.set(-.4, 9.0, 0);
+  g.add(gpsAnt);
+  const gpsDot = new THREE.Mesh(new THREE.SphereGeometry(.1,8,8),
+    new THREE.MeshStandardMaterial({color:0x00ff44,emissive:0x00ff44,emissiveIntensity:5}));
+  gpsDot.position.set(-.4, 9.3, 0);
+  g.add(gpsDot);
+
+  g.position.set(x, 0, z);
+  scene.add(g);
+
+  // LoRa rings for this light
+  const rings = [];
+  for(let i=0;i<5;i++){
+    const rm = new THREE.Mesh(
+      new THREE.RingGeometry(.12,.2,32),
+      new THREE.MeshBasicMaterial({color:0x00d4ff,side:THREE.DoubleSide,transparent:true,opacity:0})
+    );
+    rm.rotation.x = -Math.PI/2;
+    rm.position.set(x+2.2, 8.5, z);
+    rings.push({ mesh:rm, phase:i/5 });
+    scene.add(rm);
+  }
+  allRings.push(rings);
+  return g;
+}
+
+lightZ.forEach(z => makeStreetLight(LIGHT_X, z));
+
+// ---- VILLAGE AREA (Z = +45 to +80) ----
+function makeHouse(x, z, w=3.5, h=2.8, d=3, wc=0x1a2e1a, rc=0x4a2000) {
+  const g = new THREE.Group();
+  const walls = bx(w,h,d,mat(wc,0,0,.9));
+  walls.position.y=h/2; g.add(walls);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*.78,1.4,4),mat(rc,0,0,.9));
+  roof.position.y=h+.7; roof.rotation.y=Math.PI/4; g.add(roof);
+  const door = bx(.65,1.1,.06,mat(0x3a2000)); door.position.set(0,.55,d/2+.03); g.add(door);
+  // House light
+  const wl = new THREE.Mesh(new THREE.PlaneGeometry(.7,.7),
+    new THREE.MeshStandardMaterial({color:0xffd060,emissive:0xffb030,emissiveIntensity:2.5,roughness:0,transparent:true,opacity:.9}));
+  wl.position.set(-.8,.5+h*.6,d/2+.02); g.add(wl);
+  const hLight = new THREE.PointLight(0xffcc40,.8,8);
+  hLight.position.set(-.8,.5+h*.6,d/2+.5); g.add(hLight);
+  g.position.set(x,0,z);
+  scene.add(g);
+}
+
+makeHouse(-12, 52, 4.5, 3.2, 3.5, 0x1e2e1e, 0x5a3010);
+makeHouse(-8,  60, 3.5, 2.8, 3,   0x1a2a1a, 0x4a2800);
+makeHouse(-14, 68, 4,   3.0, 3.5, 0x162616, 0x3a2000);
+makeHouse(-18, 56, 3,   2.5, 3,   0x1c2c1c, 0x602010);
+makeHouse(12,  54, 4.5, 3.2, 3.5, 0x1e2e1e, 0x5a3010);
+makeHouse(9,   62, 3.5, 2.8, 3,   0x1a2a1a, 0x4a2800);
+makeHouse(14,  70, 4,   3.0, 3.5, 0x162616, 0x3a2000);
+makeHouse(18,  58, 3,   2.5, 3,   0x1c2c1c, 0x602010);
+makeHouse(-4,  73, 3,   2.5, 2.8, 0x1e2e1e, 0x662010);
+makeHouse(4,   72, 3,   2.5, 2.8, 0x1e2e1e, 0x662010);
+
+// Village street lamps (near village)
+[6, 58, 64, 70].forEach(vz => {
+  [-5,5].forEach(vx => {
+    const vp = cy(.06,.06,3.5,6,mat(0x666666));
+    vp.position.set(vx,1.75,vz); scene.add(vp);
+    const vg = new THREE.Mesh(new THREE.SphereGeometry(.13,8,8),
+      new THREE.MeshStandardMaterial({color:0xffee60,emissive:0xffee60,emissiveIntensity:3.5}));
+    vg.position.set(vx,3.6,vz); scene.add(vg);
+    const vl = new THREE.PointLight(0xffcc40,1.2,10);
+    vl.position.set(vx,3.5,vz); scene.add(vl);
+  });
+});
+
+// ---- CONTROL ROOM (big building, far village end) ----
+const ctrl = new THREE.Group();
+
+// Main building
+const mb = bx(7,5,6,mat(0x0d1e30,0x0a1830,.2));
+mb.position.y=2.5; ctrl.add(mb);
+const mr = bx(7.4,.4,6.4,mat(0x1a3a5c));
+mr.position.y=5.2; ctrl.add(mr);
+
+// Side wing
+const sw = bx(3.5,3.5,5,mat(0x0a1828,0x081420,.12));
+sw.position.set(5.25,1.75,0); ctrl.add(sw);
+const swr = bx(3.7,.35,5.3,mat(0x152e50));
+swr.position.set(5.25,3.52,0); ctrl.add(swr);
+
+// Windows (glowing)
+[[-2.5,3.8],[-.8,3.8],[.9,3.8],[2.5,3.8],
+ [-2.5,2.2],[-.8,2.2],[.9,2.2],[2.5,2.2]].forEach(([wx,wy])=>{
+  const win = bx(.75,.9,.07,new THREE.MeshStandardMaterial({color:0xffd060,emissive:0xffaa20,emissiveIntensity:2.5,roughness:0}));
+  win.position.set(wx,wy,3.04); ctrl.add(win);
+});
+const screenGlow = new THREE.PointLight(0xffaa00,.7,10);
+screenGlow.position.set(0,2.5,5); ctrl.add(screenGlow);
+
+// Main antenna tower
+const atBase = bx(.5,.5,.5,mat(0x444444)); atBase.position.set(-2,5.45,0); ctrl.add(atBase);
+const atPole = cy(.07,.07,4,6,mat(0x888888)); atPole.position.set(-2,7.45,0); ctrl.add(atPole);
+const atGlow = new THREE.Mesh(new THREE.SphereGeometry(.18,8,8),
+  new THREE.MeshStandardMaterial({color:0x00d4ff,emissive:0x00d4ff,emissiveIntensity:7}));
+atGlow.position.set(-2,9.55,0); ctrl.add(atGlow);
+const atLight = new THREE.PointLight(0x00d4ff,2,20);
+atLight.position.set(-2,9.5,0); ctrl.add(atLight);
+
+// Satellite dish
+const dish = new THREE.Mesh(
+  new THREE.SphereGeometry(1.2,14,8,0,Math.PI*2,0,Math.PI/2),
+  mat(0x8888aa,0,0,.5,.4));
+dish.rotation.x=-.9; dish.rotation.z=.3;
+dish.position.set(2.5,6.5,0); ctrl.add(dish);
+const dishPole = cy(.07,.07,1.4,6,mat(0x888888));
+dishPole.position.set(2.5,5.7,0); ctrl.add(dishPole);
+
+// Internet mast (tall)
+const imast = cy(.1,.12,14,6,mat(0x777777));
+imast.position.set(6,7,-1); ctrl.add(imast);
+const imGlow = new THREE.Mesh(new THREE.SphereGeometry(.22,8,8),
+  new THREE.MeshStandardMaterial({color:0xff3333,emissive:0xff3333,emissiveIntensity:5}));
+imGlow.position.set(6,14.1,-1); ctrl.add(imGlow);
+const imLight = new THREE.PointLight(0xff2200,2,18);
+imLight.position.set(6,14,-1); ctrl.add(imLight);
+
+// "INTERNET" horizontal dish crossbeam
+[-0.4,0,0.4].forEach(offset=>{
+  const cb=bx(2,.07,.07,mat(0x888888));
+  cb.position.set(6,10+offset*2,-1); ctrl.add(cb);
+});
+
+ctrl.position.set(-3, 0, 65);
+scene.add(ctrl);
+
+// ---- DATA PACKETS: LoRa from lights → control room antenna ----
+const packets = [];
+const CTRL_ANTENNA = new THREE.Vector3(-3+(-2), 9.55, 65);
+
+function spawnPacket(lz) {
+  const geo = new THREE.BoxGeometry(.2,.13,.2);
+  const msh = new THREE.Mesh(geo,
+    new THREE.MeshStandardMaterial({color:0x00d4ff,emissive:0x00aaff,emissiveIntensity:4,transparent:true,opacity:1}));
+  const start = new THREE.Vector3(LIGHT_X+2.2, 8.5, lz);
+  msh.position.copy(start);
+  scene.add(msh);
+  const dist = Math.abs(lz - 65);
+  packets.push({ mesh:msh, start:start.clone(), end:CTRL_ANTENNA.clone(),
+    t:0, speed:.003+Math.random()*.003, arcH:dist*.09+4 });
+}
+
+setInterval(()=>{
+  const z = lightZ[Math.floor(Math.random()*lightZ.length)];
+  spawnPacket(z);
+}, 1300);
+
+// ---- PEOPLE ----
+const people = [];
+function mkPerson(x, z, sc, sc2, dir=1) {
+  const g=new THREE.Group();
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,8,8),mat(sc));
+  head.position.y=1.85; g.add(head);
+  const body=bx(.33,.68,.23,mat(sc2)); body.position.y=1.32; g.add(body);
+  const l1=bx(.13,.58,.13,mat(0x1a1a2e)); l1.position.set(-.1,.72,0);
+  const l2=bx(.13,.58,.13,mat(0x1a1a2e)); l2.position.set(.1,.72,0);
+  g.add(l1); g.add(l2);
+  g.position.set(x,0,z);
+  g.rotation.y=dir>0?0:Math.PI;
+  scene.add(g);
+  people.push({g,l1,l2,speed:dir*(.055+Math.random()*.025),min:-115,max:58});
+  return g;
+}
+mkPerson(1.3, -5,  0xf5c5a0, 0x3a6ea5, -1);
+mkPerson(-1.6,-22, 0x8b5e3c, 0xc0392b,  1);
+mkPerson(1.6, -40, 0xd4a574, 0x2e7d32, -1);
+mkPerson(-1.3,-58, 0xf0c090, 0x6a3a8a,  1);
+mkPerson(1.4, -76, 0x8b5e3c, 0xd4580a, -1);
+mkPerson(-1.5,-92, 0xf5c5a0, 0x1a5a8a,  1);
+
+// ---- VEHICLES ----
+const vehicles = [];
+function mkVehicle(z, col, dir) {
+  const g=new THREE.Group();
+  const body=bx(2,1.1,4,mat(col)); body.position.y=.85; g.add(body);
+  const top=bx(1.7,.85,2.4,mat(col)); top.position.set(0,1.75,-.3); g.add(top);
+  // headlights
+  const hlc = dir<0?0xffffcc:0xff2200;
+  [-0.55,0.55].forEach(hx=>{
+    const hl=new THREE.Mesh(new THREE.CircleGeometry(.2,8),
+      new THREE.MeshStandardMaterial({color:hlc,emissive:hlc,emissiveIntensity:3}));
+    hl.position.set(hx,.85, dir<0?-2.01:2.01);
+    hl.rotation.y=dir<0?Math.PI:0;
+    g.add(hl);
+  });
+  if(dir<0){
+    const hl2=new THREE.SpotLight(0xffffcc,6,30,Math.PI/9,.4);
+    hl2.position.set(0,.85,-2);
+    hl2.target.position.set(0,.5,-20);
+    g.add(hl2); g.add(hl2.target);
+  }
+  [[-0.7,.38,-1.4],[0.7,.38,-1.4],[-0.7,.38,1.4],[0.7,.38,1.4]].forEach(([wx,wy,wz])=>{
+    const wh=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.22,12),mat(0x111111));
+    wh.rotation.z=Math.PI/2; wh.position.set(wx,wy,wz); g.add(wh);
+  });
+  g.rotation.y=dir>0?0:Math.PI;
+  g.position.set(dir>0?1.7:-1.7,0,z);
+  scene.add(g);
+  vehicles.push({g,speed:dir*(.22+Math.random()*.08),min:-120,max:62,dir});
+}
+mkVehicle(-12, 0x1a3a5c, -1);
+mkVehicle(-65, 0x3a1a0a,  1);
+mkVehicle(30,  0x1a2e1a, -1);
+mkVehicle(-45, 0x2a1a3a, -1);
+
+// ---- CAMERA (wide, cinematic orbit) ----
+let camAngle = 0.4;
+let t = 0;
+
+// Ref to antenna glow for pulsing
+const antennaRef = atGlow;
+const internetRef = imGlow;
+const internetLightRef = imLight;
+
+function animate() {
+  requestAnimationFrame(animate);
+  t += .008;
+
+  // Wide orbit centered at road midpoint
+  camAngle += .0010;
+  const cr = 62, ch = 26;
+  camera.position.x = Math.sin(camAngle)*cr;
+  camera.position.z = Math.cos(camAngle)*cr - 22;
+  camera.position.y = ch + Math.sin(camAngle*.35)*7;
+  camera.lookAt(0, 4, -18);
+
+  // Lamp flicker
+  lampLights.forEach((l,i)=>{ l.intensity = 3.6+Math.sin(t*2.2+i*1.8)*.5; });
+
+  // LoRa rings expand from each light
+  allRings.forEach((rings, gi)=>{
+    rings.forEach(({mesh,phase})=>{
+      const p=((t*.3+phase+gi*.07)%1);
+      mesh.scale.set(p*14, p*14, p*14);
+      mesh.material.opacity=Math.max(0,.65-p*.8);
+    });
+  });
+
+  // Control antenna pulse
+  antennaRef.material.emissiveIntensity = 5+Math.sin(t*3.5)*3;
+  atLight.intensity = 1.5+Math.sin(t*3.5)*1;
+  internetRef.material.emissiveIntensity = 3.5+Math.sin(t*4+1.5)*2.5;
+  internetLightRef.intensity = 1.5+Math.sin(t*4)*1;
+
+  // Packet arc travel
+  for(let i=packets.length-1;i>=0;i--){
+    const pk=packets[i];
+    pk.t+=pk.speed;
+    pk.mesh.position.lerpVectors(pk.start,pk.end,pk.t);
+    pk.mesh.position.y+=Math.sin(pk.t*Math.PI)*pk.arcH;
+    pk.mesh.rotation.y+=.12;
+    pk.mesh.material.opacity = pk.t<.8?1:Math.max(0,(1-pk.t)*5);
+    if(pk.t>=1){ scene.remove(pk.mesh); packets.splice(i,1); }
+  }
+
+  // People walk
+  people.forEach((p,i)=>{
+    p.g.position.z+=p.speed;
+    if(p.g.position.z>p.max) p.g.position.z=p.min;
+    if(p.g.position.z<p.min) p.g.position.z=p.max;
+    p.l1.rotation.x=Math.sin(t*5+i)*.45;
+    p.l2.rotation.x=-Math.sin(t*5+i)*.45;
+  });
+
+  // Vehicles drive
+  vehicles.forEach(v=>{
+    v.g.position.z+=v.speed;
+    if(v.dir>0 && v.g.position.z>v.max) v.g.position.z=v.min;
+    if(v.dir<0 && v.g.position.z<v.min) v.g.position.z=v.max;
+  });
+
+  // HUD
+  document.getElementById('solarVal').textContent=(23.5+Math.sin(t)*2.5).toFixed(1);
+  document.getElementById('batVal').textContent=Math.floor(84+Math.sin(t*.2)*6);
+
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>

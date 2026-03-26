@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autonomous Solar-Powered Rural Monitoring System – 2D Animation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+
+  :root {
+    --sky: #0a1628;
+    --horizon: #1a3a5c;
+    --ground: #1a2e1a;
+    --solar-yellow: #ffd700;
+    --lora-blue: #00d4ff;
+    --green: #39ff14;
+    --accent: #ff6b35;
+    --white: #e8f4fd;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--sky);
+    font-family: 'Rajdhani', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding: 30px 20px 10px;
+    animation: fadeDown 1s ease forwards;
+  }
+  .header h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(14px, 2.5vw, 26px);
+    color: var(--solar-yellow);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .header p {
+    color: var(--lora-blue);
+    font-size: 14px;
+    margin-top: 6px;
+    letter-spacing: 2px;
+  }
+
+  /* SCENE */
+  .scene {
+    position: relative;
+    width: 100%;
+    height: 520px;
+    overflow: hidden;
+  }
+
+  /* SKY GRADIENT */
+  .sky-bg {
+    position: absolute;
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, #050d1a 0%, #0a1e3a 40%, #1a3a5c 70%, #2d5a3d 70%, #1a2e1a 100%);
+  }
+
+  /* STARS */
+  .stars { position: absolute; width: 100%; height: 70%; }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--dur) ease-in-out infinite alternate;
+  }
+
+  /* MOON */
+  .moon {
+    position: absolute;
+    top: 40px; right: 12%;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle at 35% 35%, #fffbe6, #f0c040);
+    border-radius: 50%;
+    box-shadow: 0 0 30px rgba(255,215,0,0.4), 0 0 60px rgba(255,215,0,0.15);
+    animation: moonGlow 3s ease-in-out infinite alternate;
+  }
+
+  /* ROAD */
+  .road {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 90px;
+    background: #1c1c1c;
+    border-top: 3px solid #333;
+  }
+  .road-line {
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent 40px, #ffd700 40px, #ffd700 80px);
+    opacity: 0.4;
+    animation: roadMove 2s linear infinite;
+  }
+
+  /* TREES */
+  .tree {
+    position: absolute;
+    bottom: 90px;
+    animation: treeSway 4s ease-in-out infinite alternate;
+  }
+  .tree-trunk { width: 12px; height: 40px; background: #5a3a1a; margin: 0 auto; }
+  .tree-top {
+    width: 0; height: 0;
+    border-left: 28px solid transparent;
+    border-right: 28px solid transparent;
+    border-bottom: 55px solid #1e5c1e;
+    margin: 0 auto;
+    filter: drop-shadow(0 0 6px rgba(57,255,20,0.2));
+  }
+  .tree-top2 {
+    width: 0; height: 0;
+    border-left: 22px solid transparent;
+    border-right: 22px solid transparent;
+    border-bottom: 45px solid #267326;
+    margin: 0 auto;
+    margin-top: -30px;
+  }
+
+  /* STREET LIGHT POLE */
+  .street-light {
+    position: absolute;
+    bottom: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .pole { width: 6px; height: 200px; background: linear-gradient(180deg, #888, #555); }
+  .arm { width: 50px; height: 6px; background: #777; position: absolute; top: 0; left: 50%; transform: translateX(-50%) translateX(3px); border-radius: 3px; }
+  .lamp-housing {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%) translateX(26px);
+    width: 40px; height: 22px;
+    background: linear-gradient(180deg, #555, #333);
+    border-radius: 4px 4px 8px 8px;
+  }
+  .lamp-glow {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%) translateX(26px);
+    width: 28px; height: 10px;
+    background: var(--solar-yellow);
+    border-radius: 50%;
+    box-shadow: 0 0 20px 10px rgba(255,215,0,0.6), 0 0 60px 20px rgba(255,215,0,0.2);
+    animation: lampPulse 2s ease-in-out infinite alternate;
+  }
+
+  /* SOLAR PANEL on top of pole */
+  .solar-panel-mount {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%) translateX(-20px) rotate(-15deg);
+    width: 70px; height: 40px;
+  }
+  .solar-panel-body {
+    width: 70px; height: 40px;
+    background: linear-gradient(135deg, #1a3a6e 0%, #0d2244 50%, #1a4a8a 100%);
+    border: 2px solid #2255aa;
+    border-radius: 3px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 2px;
+    padding: 3px;
+    box-shadow: 0 0 10px rgba(0,212,255,0.3);
+  }
+  .solar-cell { background: #0a1e44; border: 1px solid #1a3a7a; border-radius: 1px; }
+  .solar-shine {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+    animation: solarShimmer 3s ease-in-out infinite;
+  }
+
+  /* CAMERA */
+  .camera-mount {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) translateX(40px);
+  }
+  .camera-body {
+    width: 22px; height: 14px;
+    background: #2a2a2a;
+    border-radius: 3px;
+    border: 1px solid #444;
+  }
+  .camera-lens {
+    width: 10px; height: 10px;
+    background: radial-gradient(circle, #111 30%, #333 100%);
+    border: 2px solid #555;
+    border-radius: 50%;
+    margin: 2px auto;
+    box-shadow: 0 0 6px rgba(0,212,255,0.5);
+    animation: cameraRecord 1s ease-in-out infinite alternate;
+  }
+  .rec-dot {
+    width: 5px; height: 5px;
+    background: red;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px; right: 2px;
+    animation: blink 1s step-end infinite;
+  }
+
+  /* GPS SIGNAL */
+  .gps-icon {
+    position: absolute;
+    top: -45px;
+    left: 50%;
+    transform: translateX(-50%) translateX(-45px);
+    font-size: 18px;
+    color: var(--green);
+    animation: gpsBounce 2s ease-in-out infinite;
+  }
+
+  /* LORA SIGNAL WAVES */
+  .lora-wave {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid var(--lora-blue);
+    opacity: 0;
+    animation: loraExpand var(--delay) ease-out infinite;
+    pointer-events: none;
+  }
+
+  /* CONTROL ROOM */
+  .control-room {
+    position: absolute;
+    bottom: 90px;
+    right: 6%;
+    width: 130px;
+  }
+  .building {
+    width: 130px; height: 100px;
+    background: linear-gradient(180deg, #1a2e4a, #0d1e30);
+    border: 2px solid #2a4a6e;
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .building-windows {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 6px;
+    padding: 10px;
+    height: 100%;
+  }
+  .win {
+    background: var(--solar-yellow);
+    border-radius: 2px;
+    opacity: 0.8;
+    animation: winFlicker var(--wdur) ease-in-out infinite alternate;
+  }
+  .building-roof {
+    width: 100%; height: 10px;
+    background: #2a4a6e;
+    border-radius: 2px 2px 0 0;
+  }
+  .building-label {
+    text-align: center;
+    color: var(--lora-blue);
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-top: 4px;
+    font-family: 'Orbitron', monospace;
+  }
+  .antenna {
+    position: absolute;
+    top: -28px; right: 20px;
+    width: 4px; height: 28px;
+    background: #888;
+  }
+  .antenna::before {
+    content: '';
+    position: absolute;
+    top: -5px; left: 50%;
+    transform: translateX(-50%);
+    width: 12px; height: 5px;
+    background: #aaa;
+    border-radius: 50%;
+  }
+  .antenna-glow {
+    position: absolute;
+    top: -34px; right: 18px;
+    width: 8px; height: 8px;
+    background: var(--lora-blue);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--lora-blue);
+    animation: antennaBlink 1.5s step-end infinite;
+  }
+
+  /* DATA PACKET flying from pole to building */
+  .data-packet {
+    position: absolute;
+    width: 12px; height: 8px;
+    background: var(--lora-blue);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--lora-blue);
+    opacity: 0;
+    animation: flyPacket 4s ease-in-out infinite;
+  }
+  .data-packet:nth-child(2) { animation-delay: 1.3s; }
+  .data-packet:nth-child(3) { animation-delay: 2.6s; }
+
+  /* NOTIFICATION POPUP */
+  .notification {
+    position: absolute;
+    top: 20px;
+    right: 2%;
+    background: rgba(10,22,40,0.95);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 10px 16px;
+    min-width: 200px;
+    animation: notifPop 6s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(57,255,20,0.2);
+  }
+  .notif-header {
+    color: var(--green);
+    font-size: 10px;
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .notif-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: blink 1s step-end infinite; }
+  .notif-body { color: var(--white); font-size: 12px; margin-top: 4px; }
+  .notif-loc { color: var(--lora-blue); font-size: 10px; margin-top: 2px; }
+
+  /* PEOPLE WALKING */
+  .person {
+    position: absolute;
+    bottom: 90px;
+    animation: walkPerson linear infinite;
+  }
+  .person-body {
+    display: flex; flex-direction: column; align-items: center;
+    animation: personBob 0.4s ease-in-out infinite alternate;
+  }
+  .person-head { width: 12px; height: 12px; border-radius: 50%; }
+  .person-torso { width: 8px; height: 16px; border-radius: 2px; margin-top: 1px; }
+  .person-legs {
+    display: flex; gap: 2px; margin-top: 1px;
+    animation: personWalk 0.4s ease-in-out infinite alternate;
+  }
+  .person-leg { width: 4px; height: 12px; border-radius: 2px; }
+
+  /* INFO CARDS */
+  .info-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    padding: 20px 20px 30px;
+    animation: fadeUp 1s 1.5s ease both;
+  }
+  .info-card {
+    background: rgba(10,22,40,0.85);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 10px;
+    padding: 14px 18px;
+    min-width: 160px;
+    flex: 1;
+    max-width: 220px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: default;
+  }
+  .info-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,212,255,0.2);
+    border-color: var(--lora-blue);
+  }
+  .card-icon { font-size: 26px; margin-bottom: 6px; }
+  .card-title {
+    color: var(--solar-yellow);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .card-desc { color: #a0b8cc; font-size: 12px; margin-top: 4px; line-height: 1.5; }
+
+  /* ANIMATIONS */
+  @keyframes fadeDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes twinkle { from { opacity: 0.2; } to { opacity: 1; } }
+  @keyframes moonGlow { from { box-shadow: 0 0 20px rgba(255,215,0,0.3); } to { box-shadow: 0 0 50px rgba(255,215,0,0.6), 0 0 100px rgba(255,215,0,0.2); } }
+  @keyframes roadMove { from { background-position: 0 0; } to { background-position: 80px 0; } }
+  @keyframes treeSway { from { transform: rotate(-1deg); } to { transform: rotate(1.5deg); transform-origin: bottom center; } }
+  @keyframes lampPulse { from { box-shadow: 0 0 15px 8px rgba(255,215,0,0.5); } to { box-shadow: 0 0 30px 15px rgba(255,215,0,0.7), 0 60px 40px rgba(255,215,0,0.1); } }
+  @keyframes solarShimmer { 0%,100% { opacity:0.3; } 50% { opacity:0.8; } }
+  @keyframes cameraRecord { from { box-shadow: 0 0 4px rgba(0,212,255,0.4); } to { box-shadow: 0 0 10px rgba(0,212,255,0.9); } }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+  @keyframes gpsBounce { 0%,100% { transform: translateX(-50%) translateX(-45px) translateY(0); } 50% { transform: translateX(-50%) translateX(-45px) translateY(-6px); } }
+  @keyframes loraExpand {
+    0% { width:10px; height:10px; opacity:0.8; transform: translate(-50%,-50%); }
+    100% { width:120px; height:120px; opacity:0; transform: translate(-50%,-50%); }
+  }
+  @keyframes flyPacket {
+    0% { opacity:0; left: 42%; top: 42%; }
+    10% { opacity:1; }
+    80% { opacity:1; left: 76%; top: 25%; }
+    90%,100% { opacity:0; left: 80%; top: 22%; }
+  }
+  @keyframes notifPop {
+    0%,15% { opacity:0; transform: scale(0.8) translateX(20px); }
+    20%,75% { opacity:1; transform: scale(1) translateX(0); }
+    85%,100% { opacity:0; transform: scale(0.9) translateX(10px); }
+  }
+  @keyframes winFlicker { from { opacity:0.6; } to { opacity:1; } }
+  @keyframes antennaBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+  @keyframes walkPerson {
+    from { transform: translateX(0); }
+    to { transform: translateX(-300px); }
+  }
+  @keyframes personBob { from { transform:translateY(0); } to { transform:translateY(-2px); } }
+  @keyframes personWalk { from { transform:skewX(-5deg); } to { transform:skewX(5deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Autonomous Solar-Powered Rural Monitoring System</h1>
+  <p>2D Animated Overview &nbsp;|&nbsp; Design Thinking Project</p>
+</div>
+
+<div class="scene">
+  <div class="sky-bg"></div>
+
+  <!-- Stars -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Moon -->
+  <div class="moon"></div>
+
+  <!-- Trees -->
+  <div class="tree" style="left:5%"><div class="tree-top"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+  <div class="tree" style="left:9%" id="t2"><div class="tree-top" style="border-bottom-color:#164a16"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+  <div class="tree" style="left:15%"><div class="tree-top"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+  <div class="tree" style="left:55%"><div class="tree-top"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+  <div class="tree" style="left:60%"><div class="tree-top" style="border-bottom-color:#164a16"></div><div class="tree-top2"></div><div class="tree-trunk"></div></div>
+
+  <!-- Street Light 1 (main, left-center) -->
+  <div class="street-light" style="left:35%">
+    <!-- Solar Panel -->
+    <div class="solar-panel-mount">
+      <div class="solar-panel-body" id="sp1">
+        <div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div>
+        <div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div>
+        <div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div>
+        <div class="solar-shine"></div>
+      </div>
+    </div>
+    <!-- GPS -->
+    <div class="gps-icon">📡</div>
+    <!-- Camera -->
+    <div class="camera-mount">
+      <div class="camera-body" style="position:relative">
+        <div class="camera-lens"></div>
+        <div class="rec-dot"></div>
+      </div>
+    </div>
+    <!-- LoRa Waves -->
+    <div class="lora-wave" style="--delay:2s; top:80px; left:50%; width:10px; height:10px;"></div>
+    <div class="lora-wave" style="--delay:2s; animation-delay:0.5s; top:80px; left:50%; width:10px; height:10px;"></div>
+    <div class="lora-wave" style="--delay:2s; animation-delay:1s; top:80px; left:50%; width:10px; height:10px;"></div>
+    <!-- Arm and Pole -->
+    <div style="position:relative; width:6px;">
+      <div class="arm"></div>
+      <div class="pole"></div>
+    </div>
+    <!-- Lamp -->
+    <div class="lamp-housing"></div>
+    <div class="lamp-glow"></div>
+  </div>
+
+  <!-- Street Light 2 (right of center) -->
+  <div class="street-light" style="left:52%">
+    <div class="solar-panel-mount"><div class="solar-panel-body"><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-cell"></div><div class="solar-shine"></div></div></div>
+    <div class="gps-icon" style="animation-delay:0.5s">📡</div>
+    <div style="position:relative; width:6px;"><div class="arm"></div><div class="pole" style="height:160px"></div></div>
+    <div class="lamp-housing"></div>
+    <div class="lamp-glow" style="animation-delay:0.3s"></div>
+  </div>
+
+  <!-- Data Packets -->
+  <div class="data-packet"></div>
+  <div class="data-packet"></div>
+  <div class="data-packet"></div>
+
+  <!-- Control Room -->
+  <div class="control-room">
+    <div class="building">
+      <div class="antenna"></div>
+      <div class="antenna-glow"></div>
+      <div class="building-windows">
+        <div class="win" style="--wdur:1.2s"></div>
+        <div class="win" style="--wdur:2.1s"></div>
+        <div class="win" style="--wdur:1.7s"></div>
+        <div class="win" style="--wdur:0.9s"></div>
+        <div class="win" style="--wdur:1.4s"></div>
+        <div class="win" style="--wdur:1.8s"></div>
+      </div>
+    </div>
+    <div class="building-roof"></div>
+    <div class="building-label">CONTROL ROOM</div>
+  </div>
+
+  <!-- Notification -->
+  <div class="notification">
+    <div class="notif-header"><div class="notif-dot"></div> ALERT DETECTED</div>
+    <div class="notif-body">Suspicious activity detected<br>near Street Light #3</div>
+    <div class="notif-loc">📍 GPS: 11.0168°N, 76.9558°E</div>
+  </div>
+
+  <!-- People Walking -->
+  <div class="person" style="left:70%; animation-duration:8s; animation-delay:0s;">
+    <div class="person-body">
+      <div class="person-head" style="background:#f5c5a0"></div>
+      <div class="person-torso" style="background:#3a6ea5"></div>
+      <div class="person-legs"><div class="person-leg" style="background:#1a2e4a"></div><div class="person-leg" style="background:#1a2e4a"></div></div>
+    </div>
+  </div>
+  <div class="person" style="left:65%; animation-duration:10s; animation-delay:2s; bottom:95px;">
+    <div class="person-body">
+      <div class="person-head" style="background:#8b5e3c"></div>
+      <div class="person-torso" style="background:#c0392b"></div>
+      <div class="person-legs"><div class="person-leg" style="background:#2c1810"></div><div class="person-leg" style="background:#2c1810"></div></div>
+    </div>
+  </div>
+
+  <!-- Road -->
+  <div class="road"><div class="road-line"></div></div>
+</div>
+
+<!-- Info Cards -->
+<div class="info-panel">
+  <div class="info-card">
+    <div class="card-icon">☀️</div>
+    <div class="card-title">Solar Power</div>
+    <div class="card-desc">Solar panels on each light pole generate clean energy — no grid connection needed.</div>
+  </div>
+  <div class="info-card">
+    <div class="card-icon">📡</div>
+    <div class="card-title">LoRa Comms</div>
+    <div class="card-desc">Long-range wireless data transmission — works without internet, up to 15 km range.</div>
+  </div>
+  <div class="info-card">
+    <div class="card-icon">🎥</div>
+    <div class="card-title">FPV Camera</div>
+    <div class="card-desc">Live video feed from every street light sent back to the central control room.</div>
+  </div>
+  <div class="info-card">
+    <div class="card-icon">🛰️</div>
+    <div class="card-title">GPS Tracking</div>
+    <div class="card-desc">Precise location of each light pole for mapping and incident location reporting.</div>
+  </div>
+  <div class="info-card">
+    <div class="card-icon">🏠</div>
+    <div class="card-title">Control Room</div>
+    <div class="card-desc">Central hub receives all data and can alert village security or police instantly.</div>
+  </div>
+</div>
+
+<script>
+  // Generate stars
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    s.style.cssText = `
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      width:${size}px; height:${size}px;
+      --dur:${(Math.random()*3+1).toFixed(1)}s;
+      animation-delay:${(Math.random()*3).toFixed(1)}s;
+    `;
+    starsEl.appendChild(s);
+  }
+</script>
+</body>
+</html>
